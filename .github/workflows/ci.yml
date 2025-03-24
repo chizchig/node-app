@@ -75,9 +75,11 @@ jobs:
             restore-keys: ${{ runner.os }}-trivy-
       - name: Scan Image with Trivy
         uses: aquasecurity/trivy-action@master
+        env:
+            TRIVY_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+            TRIVY_PASSWORD: ${{ secrets.DOCKERHUB_TOKEN}}
         with:
-            image-ref: |
-             ${{ env.IMAGE_NAME }}:${{ github.sha }}
+            image-ref: "${{ env.IMAGE_NAME }}:${{ github.sha }}""
             format: table
             exit-code: 1
             severity: CRITICAL,HIGH
