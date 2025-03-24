@@ -1,10 +1,18 @@
 const express = require('express');
-const app = express();
 
-app.get('/', (req, res) => {
-  res.send('Hello from Node.js!');
-});
+function setupApp(app) {
+  app.get('/', (req, res) => {
+    res.send('Hello from Node.js!');
+  });
+}
 
-app.listen(3000, () => {
-  console.log('Server running on port 3000');
-});
+// Only start the server if this file is run directly (not imported for testing)
+if (require.main === module) {
+  const app = express();
+  setupApp(app);
+  app.listen(3000, () => {
+    console.log('Server running on port 3000');
+  });
+}
+
+module.exports = setupApp;

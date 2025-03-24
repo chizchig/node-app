@@ -1,14 +1,15 @@
 const request = require('supertest');
 const express = require('express');
-const app = express();
-
-// Import the app logic from index.js
 const setupApp = require('../src/index');
 
-// Since index.js directly starts the server, we’ll mock it for testing
-setupApp(app); // Pass the app instance to the setup logic
-
 describe('Node.js App Tests', () => {
+  let app;
+
+  beforeEach(() => {
+    app = express();
+    setupApp(app); // Set up the app before each test
+  });
+
   it('GET / should return "Hello from Node.js!"', async () => {
     const response = await request(app).get('/');
     expect(response.status).toBe(200);
@@ -17,6 +18,6 @@ describe('Node.js App Tests', () => {
 
   it('GET /nonexistent should return 404', async () => {
     const response = await request(app).get('/nonexistent');
-    expect(response.status).toBe(404); // Express default behavior
+    expect(response.status).toBe(404);
   });
 });
