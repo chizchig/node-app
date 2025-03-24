@@ -6,6 +6,7 @@
     "scripts": {
         "start": "node src/index.js",
         "test": "jest --coverage",
+        "build": "echo 'Build step placeholder' && npm install",
         "lint": "eslint src/ tests/",
         "format": "prettier --write src/ tests/"
     },

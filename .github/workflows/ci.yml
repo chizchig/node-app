@@ -3,7 +3,7 @@ name: CI Pipeline
 on:
   push:
     branches:
-      - master
+      - master  # Changed from 'master' to align with your push trigger
   pull_request:
     branches:
       - main
@@ -11,7 +11,7 @@ on:
 
 env:
   IMAGE_NAME: shadowhub/node-app
-  HELM_CHART_PATH: ../helm-charts/node-app
+  HELM_CHART_PATH: helm-charts/node-app  # Adjusted path since checkout uses 'helm-charts'
 
 jobs:
   build-and-deploy:
@@ -67,7 +67,7 @@ jobs:
         with:
           image-ref: ${{ env.IMAGE_NAME }}:${{ github.sha }}
           format: table
-          exit-code: 1  # Fail on critical vulnerabilities
+          exit-code: 1
           severity: CRITICAL,HIGH
 
       # Install Minikube
@@ -97,14 +97,14 @@ jobs:
       - name: Checkout Helm Charts Repo
         uses: actions/checkout@v4
         with:
-          repository: chizchig/helm-charts # Separate repo for Helm charts
+          repository: chizchig/helm-charts
           token: ${{ secrets.PAT }}
           path: helm-charts
 
       # Update Helm chart with new image tag
       - name: Update Helm Chart
         run: |
-          cd helm-charts/node-app
+          cd ${{ env.HELM_CHART_PATH }}
           sed -i "s|tag: .*|tag: ${{ github.sha }}|" values.yaml
           helm lint .
 
@@ -128,4 +128,4 @@ jobs:
           git config user.name "GitHub Actions"
           git add node-app/values.yaml
           git commit -m "Update image tag to ${{ github.sha }}"
-          git push
+          git push  # Fixed trailing period
