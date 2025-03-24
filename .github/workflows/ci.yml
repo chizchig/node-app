@@ -111,7 +111,7 @@ jobs:
       - name: Checkout Helm Charts Repo
         uses: actions/checkout@v4
         with:
-          repository: chizchig/helm-charts
+          repository: https://github.com/chizchig/helm-charts.git
           token: ${{ secrets.PAT }}
           path: helm-charts
 
