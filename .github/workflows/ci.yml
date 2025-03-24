@@ -6,7 +6,7 @@ on:
       - master  # Changed from 'master' to align with your push trigger
   pull_request:
     branches:
-      - main
+      - master
   workflow_dispatch:
 
 env:
