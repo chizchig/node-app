@@ -62,20 +62,19 @@ jobs:
           cache-to: type=gha,mode=max
 
       # Scan image for vulnerabilities
+      - name: Cache Trivy DB
+        uses: actions/cache@v4
+        with:
+            path: ~/.cache/trivy
+            key: ${{ runner.os }}-trivy-${{ hashFiles('**/Dockerfile') }}
+            restore-keys: ${{ runner.os }}-trivy-
       - name: Scan Image with Trivy
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ env.IMAGE_NAME }}:${{ github.sha }}
-          format: table
-          exit-code: 1
-          severity: CRITICAL,HIGH
-
-      - name: Cache Trivy
-        uses: actions/cache@v4
-        with:
-          path: ~/.cache/trivy
-          key: ${{ runner.os }}-trivy-${{ hashFiles('**/Dockerfile') }}
-          restore-keys: ${{ runner.os }}-trivy-
+            image-ref: ${{ env.IMAGE_NAME }}:${{ github.sha }}
+            format: table
+            exit-code: 1
+            severity: CRITICAL,HIGH
 
       # Install Minikube
       - name: Install Minikube
