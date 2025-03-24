@@ -70,6 +70,13 @@ jobs:
           exit-code: 1
           severity: CRITICAL,HIGH
 
+      - name: Cache Trivy
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/trivy
+          key: ${{ runner.os }}-trivy-${{ hashFiles('**/Dockerfile') }}
+          restore-keys: ${{ runner.os }}-trivy-
+
       # Install Minikube
       - name: Install Minikube
         run: |
