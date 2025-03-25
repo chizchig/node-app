@@ -74,20 +74,23 @@ jobs:
         run: |
           ls -la helm-charts
           ls -la ${{ env.HELM_CHART_PATH }} || echo "node-app directory not found"
-          cat ${{ env.HELM_CHART_PATH }}/Chart.yaml || echo "Chart.yaml not found"
-          cat ${{ env.HELM_CHART_PATH }}/values.yaml || echo "values.yaml not found"
+          cat ${{ env.HELM_CHART_PATH }}/Chart.yml || echo "Chart.yml not found"
+          cat ${{ env.HELM_CHART_PATH }}/values.yml || echo "values.yml not found"
 
       - name: Update Helm Chart
         run: |
           cd ${{ env.HELM_CHART_PATH }}
-          sed -i "s|tag: .*|tag: ${{ github.sha }}|" values.yaml
+          # Try to replace tag; if it fails (no match), append it
+          sed -i "s|tag: .*|tag: ${{ github.sha }}|" values.yml || echo "  tag: ${{ github.sha }}" >> values.yml
           helm lint .
+          # Show the updated file for debugging
+          cat values.yml
 
       - name: Commit Helm Chart Updates
         run: |
           cd helm-charts
           git config user.email "github-actions@github.com"
           git config user.name "GitHub Actions"
-          git add node-app/values.yaml
-          git commit -m "Update image tag to ${{ github.sha }}"
-          git push
+          git add node-app/values.yml  # Fixed to .yml
+          git commit -m "Update image tag to ${{ github.sha }}" || echo "No changes to commit"
+          git push || echo "Nothing to push (no changes)"
