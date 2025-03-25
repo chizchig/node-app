@@ -119,12 +119,13 @@ jobs:
         run: |
             ls -la helm-charts
             ls -la helm-charts/node-app || echo "node-app directory not found"
+            find helm-charts -name values.yml || echo "values.yml not found anywhere"
 
       # Update Helm chart with new image tag
       - name: Update Helm Chart
         run: |
           cd ${{ env.HELM_CHART_PATH }}
-          sed -i "s|tag: .*|tag: ${{ github.sha }}|" values.yaml
+          sed -i "s|tag: .*|tag: ${{ github.sha }}|" values.yml
           helm lint .
 
       # Deploy to Minikube and Test
@@ -145,6 +146,6 @@ jobs:
           cd helm-charts
           git config user.email "github-actions@github.com"
           git config user.name "GitHub Actions"
-          git add node-app/values.yaml
+          git add node-app/values.yml
           git commit -m "Update image tag to ${{ github.sha }}"
           git push  # Fixed trailing period
