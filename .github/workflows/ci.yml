@@ -111,9 +111,14 @@ jobs:
       - name: Checkout Helm Charts Repo
         uses: actions/checkout@v4
         with:
-          repository: https://github.com/chizchig/helm-charts.git
+          repository: chizchig/helm-charts
           token: ${{ secrets.PAT }}
           path: helm-charts
+
+      - name: Debug Helm Charts Checkout
+        run: |
+            ls -la helm-charts
+            ls -la helm-charts/node-app || echo "node-app directory not found"
 
       # Update Helm chart with new image tag
       - name: Update Helm Chart
