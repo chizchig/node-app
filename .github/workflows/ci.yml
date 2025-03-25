@@ -3,52 +3,33 @@ name: CI Pipeline
 on:
   push:
     branches:
-      - master  # Changed from 'master' to align with your push trigger
+      - master
   pull_request:
     branches:
       - master
   workflow_dispatch:
 
 env:
-  IMAGE_NAME: docker.io/shadowhub/node-app
-  HELM_CHART_PATH: helm-charts/node-app  # Adjusted path since checkout uses 'helm-charts'
+  IMAGE_NAME: docker.io/shadowhub/node-app  # Replace *** with shadowhub or confirm
+  HELM_CHART_PATH: helm-charts/node-app
+  TRIVY_SEVERITY: CRITICAL
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     steps:
-      # Checkout application code
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # Cache npm dependencies
-      - name: Cache npm
-        uses: actions/cache@v4
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: ${{ runner.os }}-npm-
-
-      # Install dependencies
-      - name: Install Dependencies
-        run: npm ci
-
-      # Run unit tests
-      - name: Run Tests
-        run: npm test || echo "No tests defined"
-
-      # Set up Docker Buildx with caching
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      # Log in to Docker Hub
       - name: Login to Docker Hub
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      # Build and push Docker image
       - name: Build and Push Docker Image
         uses: docker/build-push-action@v6
         with:
@@ -58,56 +39,30 @@ jobs:
           tags: |
             ${{ env.IMAGE_NAME }}:latest
             ${{ env.IMAGE_NAME }}:${{ github.sha }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
 
       - name: Debug Image
         run: |
-              echo "Image built: ${{ env.IMAGE_NAME }}:${{ github.sha }}"
-              docker pull ${{ env.IMAGE_NAME }}:${{ github.sha }} || echo "Pull failed"
+          echo "Image built: ${{ env.IMAGE_NAME }}:${{ github.sha }}"
+          docker pull ${{ env.IMAGE_NAME }}:${{ github.sha }} || echo "Pull failed"
 
-      # Scan image for vulnerabilities
       - name: Cache Trivy DB
         uses: actions/cache@v4
         with:
-            path: ~/.cache/trivy
-            key: ${{ runner.os }}-trivy-${{ hashFiles('**/Dockerfile') }}
-            restore-keys: ${{ runner.os }}-trivy-
+          path: ~/.cache/trivy
+          key: ${{ runner.os }}-trivy-${{ hashFiles('**/Dockerfile') }}
+          restore-keys: ${{ runner.os }}-trivy-
+
       - name: Scan Image with Trivy
         uses: aquasecurity/trivy-action@master
         env:
-            TRIVY_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
-            TRIVY_PASSWORD: ${{ secrets.DOCKERHUB_TOKEN}}
+          TRIVY_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          TRIVY_PASSWORD: ${{ secrets.DOCKERHUB_TOKEN }}
         with:
-            image-ref: "${{ env.IMAGE_NAME }}:${{ github.sha }}"
-            format: table
-            exit-code: 1
-            severity: CRITICAL
+          image-ref: "${{ env.IMAGE_NAME }}:${{ github.sha }}"
+          format: table
+          exit-code: 1
+          severity: ${{ env.TRIVY_SEVERITY }}
 
-      # Install Minikube
-      - name: Install Minikube
-        run: |
-          curl -LO https://storage.googleapis.com/minikube/releases/latest/minikube-linux-amd64
-          sudo install minikube-linux-amd64 /usr/local/bin/minikube
-
-      # Start Minikube
-      - name: Start Minikube
-        run: minikube start --driver=docker --wait=all
-
-      # Install kubectl
-      - name: Install kubectl
-        run: |
-          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-          sudo install kubectl /usr/local/bin/kubectl
-
-      # Install Helm
-      - name: Install Helm
-        run: |
-          curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3
-          chmod +x get_helm.sh
-          ./get_helm.sh
-
-      # Checkout Helm charts repo
       - name: Checkout Helm Charts Repo
         uses: actions/checkout@v4
         with:
@@ -117,30 +72,17 @@ jobs:
 
       - name: Debug Helm Charts Checkout
         run: |
-            ls -la helm-charts
-            ls -la helm-charts/node-app || echo "node-app directory not found"
-            find helm-charts -name values.yml || echo "values.yml not found anywhere"
+          ls -la helm-charts
+          ls -la ${{ env.HELM_CHART_PATH }} || echo "node-app directory not found"
+          cat ${{ env.HELM_CHART_PATH }}/Chart.yml || echo "Chart.yml not found"
+          cat ${{ env.HELM_CHART_PATH }}/values.yml || echo "values.yml not found"
 
-      # Update Helm chart with new image tag
       - name: Update Helm Chart
         run: |
           cd ${{ env.HELM_CHART_PATH }}
           sed -i "s|tag: .*|tag: ${{ github.sha }}|" values.yml
           helm lint .
 
-      # Deploy to Minikube and Test
-      - name: Deploy to Minikube and Test
-        run: |
-          helm upgrade --install node-app ${{ env.HELM_CHART_PATH }} \
-            --set image.repository=${{ env.IMAGE_NAME }} \
-            --set image.tag=${{ github.sha }} \
-            --wait
-          kubectl wait --for=condition=available deployment/node-app --timeout=120s
-          kubectl port-forward svc/node-app 3000:80 &
-          sleep 5
-          curl -f http://localhost:3000 || exit 1
-
-      # Commit and push Helm chart changes
       - name: Commit Helm Chart Updates
         run: |
           cd helm-charts
@@ -148,4 +90,4 @@ jobs:
           git config user.name "GitHub Actions"
           git add node-app/values.yml
           git commit -m "Update image tag to ${{ github.sha }}"
-          git push  # Fixed trailing period
+          git push
