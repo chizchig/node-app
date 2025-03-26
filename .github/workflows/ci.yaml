@@ -40,6 +40,14 @@ jobs:
             ${{ env.IMAGE_NAME }}:latest
             ${{ env.IMAGE_NAME }}:${{ github.sha }}
 
+      - name: Analyze Image with Docker Scout
+        run: |
+              docker scout quickview ${{ env.IMAGE_NAME }}:${{ github.sha }}
+    
+      - name: Scan Image for CVEs with Docker Scout
+        run: |
+              docker scout cves ${{ env.IMAGE_NAME }}:${{ github.sha }}
+
       - name: Debug Image
         run: |
           echo "Image built: ${{ env.IMAGE_NAME }}:${{ github.sha }}"
@@ -77,7 +85,7 @@ jobs:
           cat ${{ env.HELM_CHART_PATH }}/Chart.yml || echo "Chart.yml not found"
           cat ${{ env.HELM_CHART_PATH }}/values.yml || echo "values.yml not found"
 
-      - name: Update Helm Chart
+      - name: Update Helm Chartfrrf
         run: |
           cd ${{ env.HELM_CHART_PATH }}
           # Try to replace tag; if it fails (no match), append it
